@@ -1,0 +1,41 @@
+---
+interface Props {
+  type: 'blog-posting' | 'person';
+  data: Record<string, any>;
+}
+
+const { type, data } = Astro.props;
+const pageUrl = new URL(Astro.url.pathname, Astro.site).href;
+
+const AUTHOR = {
+  '@type': 'Person',
+  name: 'mart1n',
+  url: 'https://www.mart1n.xyz',
+};
+
+let jsonLd: Record<string, unknown> = {};
+
+if (type === 'blog-posting') {
+  jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BlogPosting',
+    headline: data.title,
+    description: data.description ?? data.title,
+    datePublished: data.date,
+    ...(data.updated ? { dateModified: data.updated } : {}),
+    ...(data.tags?.length ? { keywords: data.tags.join(', ') } : {}),
+    url: pageUrl,
+    author: AUTHOR,
+  };
+} else if (type === 'person') {
+  jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Person',
+    name: 'mart1n',
+    url: pageUrl,
+    ...(data.description ? { description: data.description } : {}),
+  };
+}
+---
+
+<script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />

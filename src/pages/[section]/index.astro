@@ -1,0 +1,120 @@
+---
+import Layout from '../../components/Layout.astro';
+import EntryCard from '../../components/EntryCard.astro';
+import { getCollection } from 'astro:content';
+import { compareEntries } from '../../utils/entries';
+import { SECTIONS, SECTION_META, sectionOf } from '../../sections.mjs';
+
+export async function getStaticPaths() {
+  return SECTIONS.map(section => ({ params: { section }, props: { section } }));
+}
+
+const { section } = Astro.props;
+const meta = SECTION_META[section];
+
+const entries = (
+  await getCollection('garden', ({ data }) => !data.draft)
+)
+  .filter(entry => sectionOf(entry.id) === section)
+  .sort(compareEntries);
+
+const tagCounts = new Map<string, number>();
+for (const entry of entries) {
+  for (const tag of entry.data.tags) {
+    tagCounts.set(tag, (tagCounts.get(tag) ?? 0) + 1);
+  }
+}
+const tags = Array.from(tagCounts.entries()).sort(
+  (a, b) => b[1] - a[1] || a[0].localeCompare(b[0])
+);
+---
+
+<Layout title={meta.label} description={meta.blurb}>
+  <section class="mb-10 max-w-2xl border-b border-line-2 pb-8">
+    <p class="g-label mb-4">{entries.length} {entries.length === 1 ? 'entry' : 'entries'}</p>
+    <h1 class="text-4xl sm:text-5xl font-semibold mb-4 text-ink leading-tight">{meta.label}</h1>
+    <p class="text-ink-2 leading-relaxed font-serif text-lg">{meta.blurb}</p>
+  </section>
+
+  {tags.length > 0 && (
+    <div class="mb-6 flex flex-wrap items-center gap-2">
+      <span class="text-xs uppercase tracking-wider text-ink-4 mr-1">Tag:</span>
+      <button type="button" data-tag-filter="" class="g-tag tag-filter is-active transition-colors">
+        All <span class="opacity-60">({entries.length})</span>
+      </button>
+      {tags.map(([tag, count]) => (
+        <button type="button" data-tag-filter={tag} class="g-tag tag-filter transition-colors">
+          {tag} <span class="opacity-60">({count})</span>
+        </button>
+      ))}
+    </div>
+  )}
+
+  <ul class="space-y-3">
+    {entries.map(entry => (
+      <li data-entry-card data-tags={entry.data.tags.join(',')}>
+        <EntryCard entry={entry} variant="default" />
+      </li>
+    ))}
+  </ul>
+
+  {entries.length === 0 && (
+    <div class="p-8 bg-inset/40 border border-dashed border-line-2 rounded-lg text-center">
+      <div class="text-ink-2 font-semibold mb-1">Nothing here yet</div>
+      <p class="text-sm text-ink-4">
+        Markdown files in <code class="text-ink-3">src/content/garden/{section}/</code> appear here.
+      </p>
+    </div>
+  )}
+</Layout>
+
+<style>
+  .tag-filter.is-active {
+    background: rgb(var(--c-accent) / 0.25);
+    color: rgb(var(--c-accent-2));
+    border-color: rgb(var(--c-accent) / 0.5);
+  }
+</style>
+
+<script>
+  (function () {
+    const tagButtons = Array.from(document.querySelectorAll<HTMLButtonElement>('.tag-filter'));
+    const cards = Array.from(document.querySelectorAll<HTMLElement>('[data-entry-card]'));
+    if (cards.length === 0) return;
+
+    let activeTag = '';
+
+    const syncUrl = () => {
+      const params = new URLSearchParams(location.search);
+      if (activeTag) params.set('tag', activeTag);
+      else params.delete('tag');
+      const qs = params.toString();
+      history.replaceState(null, '', qs ? `${location.pathname}?${qs}` : location.pathname);
+    };
+
+    const apply = (updateUrl = true) => {
+      tagButtons.forEach(b =>
+        b.classList.toggle('is-active', (b.dataset.tagFilter ?? '') === activeTag)
+      );
+      cards.forEach(card => {
+        const cardTags = (card.dataset.tags ?? '').split(',').filter(Boolean);
+        card.style.display = activeTag === '' || cardTags.includes(activeTag) ? '' : 'none';
+      });
+      if (updateUrl) syncUrl();
+    };
+
+    tagButtons.forEach(b =>
+      b.addEventListener('click', () => {
+        activeTag = b.dataset.tagFilter ?? '';
+        apply();
+      })
+    );
+
+    // Restore state from a shared/bookmarked URL.
+    const urlTag = new URLSearchParams(location.search).get('tag') ?? '';
+    if (urlTag && tagButtons.some(b => b.dataset.tagFilter === urlTag)) {
+      activeTag = urlTag;
+      apply(false);
+    }
+  })();
+</script>

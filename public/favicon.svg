@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <rect width="32" height="32" rx="7" fill="#0c1512"/>
+  <rect x="0.75" y="0.75" width="30.5" height="30.5" rx="6.25" fill="none" stroke="#4fd1b5" stroke-opacity="0.5" stroke-width="1.5"/>
+  <text x="16" y="24" text-anchor="middle" font-family="ui-serif, Georgia, Cambria, 'Times New Roman', Times, serif" font-size="21" font-weight="600" fill="#7ee8d0">m</text>
+</svg>

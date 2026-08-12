@@ -1,0 +1,40 @@
+---
+/**
+ * Garden maturity. Signals how settled an entry is, so a half-formed note
+ * doesn't read as a finished claim.
+ */
+interface Props {
+  maturity: 'seed' | 'budding' | 'evergreen';
+  size?: 'sm' | 'md';
+}
+
+const { maturity, size = 'md' } = Astro.props;
+
+const palette = {
+  seed: 'bg-warn/10 text-warn border-warn/30',
+  budding: 'bg-info/10 text-info border-info/30',
+  evergreen: 'bg-ok/10 text-ok border-ok/30',
+} as const;
+
+const icon = {
+  seed: '·',
+  budding: '◗',
+  evergreen: '●',
+} as const;
+
+const hint = {
+  seed: 'Rough and unfinished — captured to think about later',
+  budding: 'Taking shape, still being revised',
+  evergreen: 'Settled — revised only as understanding changes',
+} as const;
+
+const padding = size === 'sm' ? 'px-1.5 py-0.5 text-[10px]' : 'px-2 py-0.5 text-[11px]';
+---
+
+<span
+  class={`inline-flex items-center gap-1.5 rounded border font-semibold uppercase tracking-wider ${palette[maturity]} ${padding}`}
+  title={hint[maturity]}
+>
+  <span aria-hidden="true">{icon[maturity]}</span>
+  <span>{maturity}</span>
+</span>

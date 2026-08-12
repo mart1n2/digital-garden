@@ -1,0 +1,99 @@
+---
+import IncidentBadge from './IncidentBadge.astro';
+import MaturityBadge from './MaturityBadge.astro';
+import RelativeAge from './RelativeAge.astro';
+import { dateParts, readingTime } from '../utils/entries';
+import type { Entry } from '../utils/entries';
+import { SECTION_META, sectionOf, urlOf } from '../sections.mjs';
+
+interface Props {
+  entry: Entry;
+  /**
+   * featured — the lead card on an index (larger type, description, tags)
+   * default  — standard list row
+   * compact  — title + date only, for the small cards beside a featured one
+   */
+  variant?: 'featured' | 'default' | 'compact';
+  /** Show which section this belongs to. Off on section indexes, where it's redundant. */
+  showSection?: boolean;
+}
+
+const { entry, variant = 'default', showSection = false } = Astro.props;
+
+const { effectiveDate, origDate, isUpdated } = dateParts(entry.data);
+const section = sectionOf(entry.id);
+const isIncident = Boolean(entry.data.incident);
+---
+
+<a
+  href={urlOf(entry.id)}
+  class:list={[
+    'g-card flex flex-col',
+    isIncident && 'is-incident',
+    variant === 'featured' && 'p-5 sm:p-6',
+    variant === 'default' && 'p-5',
+    variant === 'compact' && 'justify-center h-full p-4',
+  ]}
+>
+  {variant !== 'compact' && (isIncident || entry.data.maturity) && (
+    <div class="flex flex-wrap items-center gap-2 mb-2.5">
+      {entry.data.incident && (
+        <IncidentBadge incident={entry.data.incident} size="sm" />
+      )}
+      {entry.data.maturity && <MaturityBadge maturity={entry.data.maturity} size="sm" />}
+    </div>
+  )}
+
+  <div class="flex flex-wrap items-center gap-x-3 gap-y-1.5 mb-1.5">
+    <time datetime={effectiveDate} class="text-[11px] uppercase tracking-wider text-ink-4 font-mono">
+      {effectiveDate}
+    </time>
+    {isUpdated && (
+      <span class="text-[10px] text-ink-4 font-mono" title={`Originally published ${origDate}`}>
+        updated
+      </span>
+    )}
+    {variant === 'compact' && isIncident && (
+      <span class="text-[10px] uppercase tracking-wider text-danger font-semibold">Incident</span>
+    )}
+    {variant !== 'compact' && (
+      <span class="text-[11px] text-ink-4 font-mono">· {readingTime(entry.body ?? '')}</span>
+    )}
+    {showSection && (
+      <span class="text-[11px] uppercase tracking-wider text-ink-4">
+        · {SECTION_META[section].label}
+      </span>
+    )}
+  </div>
+
+  <h3
+    class:list={[
+      'font-semibold text-ink leading-snug',
+      variant === 'featured' && 'text-xl sm:text-2xl font-bold leading-tight',
+      variant === 'default' && 'text-lg',
+      variant === 'compact' && 'text-sm line-clamp-2',
+    ]}
+  >
+    {entry.data.title}
+  </h3>
+
+  {variant !== 'compact' && entry.data.description && (
+    <p
+      class:list={[
+        'text-sm text-ink-3 leading-relaxed mt-2',
+        variant === 'featured' && 'line-clamp-3',
+      ]}
+    >
+      {entry.data.description}
+    </p>
+  )}
+
+  {variant !== 'compact' && entry.data.tags.length > 0 && (
+    <div class="flex flex-wrap items-center gap-1.5 mt-auto pt-4 text-[11px]">
+      {entry.data.tags.slice(0, 5).map(tag => <span class="g-tag">{tag}</span>)}
+      <span class="ml-auto text-ink-4 self-center">
+        <RelativeAge date={effectiveDate} />
+      </span>
+    </div>
+  )}
+</a>

@@ -1,0 +1,106 @@
+---
+import Layout from '../components/Layout.astro';
+import JsonLd from '../components/JsonLd.astro';
+import { SECTIONS, SECTION_META } from '../sections.mjs';
+---
+
+<Layout
+  title="About"
+  description="What this site is, how it's organized, and how to read the maturity labels."
+>
+  <div class="max-w-3xl">
+    <JsonLd
+      type="person"
+      data={{ description: 'Security research and engineering writing.' }}
+    />
+
+    <h1 class="text-3xl font-bold mb-2">About</h1>
+    <p class="text-ink-3 mb-8">What this site is and how it's organized.</p>
+
+    <section class="space-y-4 mb-10">
+      <h2 class="text-xl font-bold">What this is</h2>
+      <p class="text-ink-2 leading-relaxed">
+        A personal site for long-form technical writing — mostly security research and incident
+        analysis, across whichever domain the interesting failure happens to be in, plus the
+        engineering around it. Entries are written to be read on their own and linked to each other,
+        so the same idea can be referenced from several places rather than re-explained.
+      </p>
+      <p class="text-ink-2 leading-relaxed">
+        Nothing here is investment advice, and nothing here speaks for an employer. Post-mortems
+        describe what happened and what the code got wrong; they are not disclosures, and they cover
+        incidents that are already public.
+      </p>
+    </section>
+
+    <section class="space-y-4 mb-10">
+      <h2 class="text-xl font-bold">The sections</h2>
+      <dl class="space-y-3">
+        {SECTIONS.map(section => (
+          <div class="g-panel">
+            <dt class="font-semibold text-ink">
+              <a href={`/${section}`} class="hover:text-accent-2 transition-colors">
+                {SECTION_META[section].label}
+              </a>
+            </dt>
+            <dd class="text-sm text-ink-3 leading-relaxed mt-1">{SECTION_META[section].blurb}</dd>
+          </div>
+        ))}
+      </dl>
+    </section>
+
+    <section class="space-y-4 mb-10">
+      <h2 class="text-xl font-bold">Maturity labels</h2>
+      <p class="text-ink-2 leading-relaxed">
+        Entries under <a href="/notes" class="text-accent hover:text-accent-2">Notes</a> carry a
+        maturity label, because publishing a half-formed thought is only useful if it's marked as
+        one:
+      </p>
+      <ul class="space-y-2 text-ink-2">
+        <li>
+          <strong class="text-warn">Seed</strong> — rough and unfinished, captured to think about
+          later. Expect gaps.
+        </li>
+        <li>
+          <strong class="text-info">Budding</strong> — taking shape, still being revised.
+        </li>
+        <li>
+          <strong class="text-ok">Evergreen</strong> — settled, and revised only as understanding
+          changes.
+        </li>
+      </ul>
+      <p class="text-ink-2 leading-relaxed">
+        Entries in the other three sections don't carry a label; they're published when they're
+        finished. All entries show an original publish date and, where it differs, a revision date.
+      </p>
+    </section>
+
+    <section class="space-y-4 mb-10">
+      <h2 class="text-xl font-bold">Links between entries</h2>
+      <p class="text-ink-2 leading-relaxed">
+        Internal links are written as wiki-style references and resolved at build time — a link to a
+        renamed or missing entry fails the build rather than shipping a 404. Each entry lists what
+        links back to it, so a well-referenced note is discoverable from the things that cite it.
+      </p>
+    </section>
+
+    <section class="space-y-4">
+      <h2 class="text-xl font-bold">Elsewhere</h2>
+      <ul class="space-y-2 text-ink-2">
+        <li>
+          <a href="https://www.kyp.one" target="_blank" rel="noopener noreferrer" class="text-accent hover:text-accent-2">
+            Know Your Protocol ↗
+          </a>
+          — a structured database of DeFi protocol permissions, trust surfaces, and audit findings.
+        </li>
+        <li>
+          <a href="https://github.com/mart1n2" target="_blank" rel="noopener noreferrer" class="text-accent hover:text-accent-2">
+            GitHub ↗
+          </a>
+        </li>
+        <li>
+          <a href="/rss.xml" class="text-accent hover:text-accent-2">RSS</a> — every section, one feed.
+        </li>
+      </ul>
+    </section>
+  </div>
+</Layout>

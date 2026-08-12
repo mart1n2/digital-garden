@@ -1,0 +1,188 @@
+---
+import Layout from '../../components/Layout.astro';
+import IncidentBadge from '../../components/IncidentBadge.astro';
+import MaturityBadge from '../../components/MaturityBadge.astro';
+import TableOfContents from '../../components/TableOfContents.astro';
+import Backlinks from '../../components/Backlinks.astro';
+import JsonLd from '../../components/JsonLd.astro';
+import RelativeAge from '../../components/RelativeAge.astro';
+import { getCollection, render } from 'astro:content';
+import { compareEntries, dateParts, isoDate, readingTime } from '../../utils/entries';
+import { buildBacklinks } from '../../utils/backlinks';
+import { SECTIONS, SECTION_META, sectionOf, slugOf, urlOf } from '../../sections.mjs';
+
+export async function getStaticPaths() {
+  const entries = await getCollection('garden', ({ data }) => !data.draft);
+
+  // Guard the derived section. A directory that isn't declared would otherwise
+  // produce pages with no section index and no nav entry.
+  for (const entry of entries) {
+    if (!SECTIONS.includes(sectionOf(entry.id))) {
+      throw new Error(
+        `Entry "${entry.id}" is in an undeclared section "${sectionOf(entry.id)}". ` +
+          `Declared: ${SECTIONS.join(', ')}. Add it to src/sections.mjs or move the file.`
+      );
+    }
+  }
+
+  // Built once here rather than per-page — buildBacklinks() walks every entry.
+  const backlinks = await buildBacklinks();
+
+  return entries.map(entry => ({
+    params: { section: sectionOf(entry.id), slug: slugOf(entry.id) },
+    props: { entry, backlinks: backlinks.get(entry.id) ?? [] },
+  }));
+}
+
+const { entry, backlinks } = Astro.props;
+const { Content, headings } = await render(entry);
+
+const section = sectionOf(entry.id);
+const meta = SECTION_META[section];
+const { effectiveDate, origDate, isUpdated } = dateParts(entry.data);
+const readTime = readingTime(entry.body ?? '');
+
+// Garden entries are short and revised; a TOC would outweigh the text. Long-form
+// sections earn one only once there are enough headings to navigate.
+const tocHeadings = headings.filter(h => h.depth === 2 || h.depth === 3);
+const showToc = !meta.garden && tocHeadings.length >= 3;
+
+const related = (await getCollection('garden', ({ data }) => !data.draft))
+  .filter(e => e.id !== entry.id && sectionOf(e.id) === section)
+  .filter(e => e.data.tags.some(t => entry.data.tags.includes(t)))
+  .sort(compareEntries)
+  .slice(0, 3);
+
+const proseClasses = `prose prose-invert max-w-3xl
+  prose-headings:scroll-mt-20
+  prose-h1:hidden
+  prose-h2:text-xl prose-h2:font-bold prose-h2:mt-8 prose-h2:mb-3
+  prose-h3:text-base prose-h3:font-semibold prose-h3:text-ink prose-h3:mt-6 prose-h3:mb-2
+  prose-p:text-ink-2 prose-p:leading-relaxed
+  prose-li:text-ink-2 prose-li:my-1
+  prose-strong:text-ink
+  prose-a:text-accent prose-a:no-underline hover:prose-a:text-accent-2 hover:prose-a:underline
+  prose-blockquote:border-l-accent prose-blockquote:bg-inset/50 prose-blockquote:py-2 prose-blockquote:px-4 prose-blockquote:rounded-r prose-blockquote:not-italic prose-blockquote:text-ink-2
+  prose-code:text-accent-2 prose-code:bg-inset prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:before:content-none prose-code:after:content-none prose-code:font-normal prose-code:text-[0.875em]
+  prose-hr:border-line-2
+  prose-table:text-sm prose-table:my-4
+  prose-th:text-ink-2 prose-th:font-semibold prose-th:bg-inset/60 prose-th:py-2 prose-th:px-3 prose-th:text-left prose-th:border prose-th:border-line-2
+  prose-td:py-2 prose-td:px-3 prose-td:text-ink-2 prose-td:align-top prose-td:border prose-td:border-line`;
+---
+
+<Layout
+  title={entry.data.title}
+  description={entry.data.description ?? entry.data.title}
+  ogType="article"
+  publishedDate={origDate}
+  modifiedDate={isUpdated ? effectiveDate : undefined}
+>
+  <div data-pagefind-body data-pagefind-meta={`title:${entry.data.title}`}>
+    <meta data-pagefind-meta={`section:${section}`} />
+    <JsonLd
+      type="blog-posting"
+      data={{
+        title: entry.data.title,
+        description: entry.data.description,
+        date: origDate,
+        updated: isUpdated ? effectiveDate : null,
+        tags: entry.data.tags,
+      }}
+    />
+
+    <a href={`/${section}`} class="text-sm text-accent hover:underline mb-4 inline-flex items-center gap-1">
+      <span aria-hidden="true">←</span>
+      <span>All {meta.label.toLowerCase()}</span>
+    </a>
+
+    <header class="mb-8">
+      {(entry.data.incident || entry.data.maturity) && (
+        <div class="mb-3 flex flex-wrap items-center gap-2">
+          {entry.data.incident && <IncidentBadge incident={entry.data.incident} size="md" />}
+          {entry.data.maturity && <MaturityBadge maturity={entry.data.maturity} size="md" />}
+        </div>
+      )}
+      <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs uppercase tracking-wider text-ink-4 mb-2">
+        {isUpdated ? (
+          <>
+            <time datetime={effectiveDate} class="font-mono normal-case">Updated {effectiveDate}</time>
+            <span aria-hidden="true">·</span>
+            <time datetime={origDate} class="font-mono normal-case text-ink-4" title="Originally published">
+              orig {origDate}
+            </time>
+          </>
+        ) : (
+          <time datetime={effectiveDate} class="font-mono normal-case">{effectiveDate}</time>
+        )}
+        <span aria-hidden="true">·</span>
+        <span class="normal-case"><RelativeAge date={effectiveDate} /></span>
+        <span aria-hidden="true">·</span>
+        <span class="normal-case">{readTime}</span>
+        {entry.data.tags.map(tag => (
+          <span class="g-tag normal-case tracking-normal">{tag}</span>
+        ))}
+      </div>
+      <h1 class="text-3xl sm:text-4xl font-bold mb-2 leading-tight">{entry.data.title}</h1>
+      {entry.data.description && (
+        <p class="text-ink-3 leading-relaxed max-w-2xl mt-2">{entry.data.description}</p>
+      )}
+      {entry.data.relatedProtocol && (
+        <p class="text-sm text-ink-3 mt-3">
+          Protocol dashboard:{' '}
+          <a
+            href={entry.data.relatedProtocol}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="text-accent hover:text-accent-2 underline-offset-2 hover:underline"
+          >
+            {entry.data.relatedProtocol.replace(/^https?:\/\/(www\.)?/, '')} ↗
+          </a>
+        </p>
+      )}
+    </header>
+
+    {showToc ? (
+      <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+        <aside class="lg:col-span-1 lg:order-last">
+          <TableOfContents headings={tocHeadings} />
+        </aside>
+        <article class={`lg:col-span-3 ${proseClasses}`}>
+          <Content />
+        </article>
+      </div>
+    ) : (
+      <article class={proseClasses}>
+        <Content />
+      </article>
+    )}
+
+    {/* Backlinks are the point of a garden, so notes always show the panel —
+        including its empty state. Long-form sections only show it when populated. */}
+    {(meta.garden || backlinks.length > 0) && <Backlinks backlinks={backlinks} />}
+
+    {related.length > 0 && (
+      <section class="mt-12 pt-6 border-t border-line-2 max-w-3xl">
+        <h2 class="text-xs font-semibold uppercase tracking-wider text-ink-4 mb-3">
+          More in {meta.label.toLowerCase()}
+        </h2>
+        <ul class="space-y-2">
+          {related.map(r => (
+            <li>
+              <a href={urlOf(r.id)} class="g-card block p-3">
+                <div class="flex items-center justify-between gap-3">
+                  <span class="text-sm font-medium text-ink-2">{r.data.title}</span>
+                  <time class="text-xs text-ink-4 font-mono shrink-0">
+                    {isoDate(r.data.updated ?? r.data.date)}
+                  </time>
+                </div>
+                {r.data.description && (
+                  <p class="text-xs text-ink-4 mt-1 line-clamp-1">{r.data.description}</p>
+                )}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </section>
+    )}
+  </div>
+</Layout>

@@ -1,0 +1,402 @@
+@import 'tailwindcss';
+@plugin '@tailwindcss/typography';
+
+/* ---------------------------------------------------------------------------
+ * Theme tokens — cool editorial.
+ *
+ * Cool-neutral with a green cast, deliberately teal rather than blue: this site
+ * is for reading, and it should not look like the protocol database it split
+ * off from (which is blue-on-slate). Greys carry a faint green bias so the
+ * accent sits in the same family, and the dark theme is a green-black rather
+ * than a blue-black.
+ *
+ * RGB triplets so alpha composition (bg-accent/10) works.
+ * ------------------------------------------------------------------------- */
+:root,
+[data-theme='light'] {
+  color-scheme: light;
+
+  --c-page: 246 249 248;    /* cool paper, faint green cast */
+  --c-surface: 255 255 255;
+  --c-elevated: 255 255 255;
+  --c-inset: 234 240 238;
+
+  --c-ink: 18 33 29;        /* deep green-black */
+  --c-ink-2: 51 69 63;
+  --c-ink-3: 91 107 101;
+  --c-ink-4: 134 147 141;
+
+  --c-line: rgba(18, 33, 29, 0.10);
+  --c-line-2: rgba(18, 33, 29, 0.17);
+
+  --c-accent: 13 125 110;   /* teal-green */
+  --c-accent-2: 10 97 86;
+
+  --c-danger: 179 38 30;
+  --c-hot: 194 65 12;
+  --c-warn: 161 98 7;
+  --c-ok: 21 128 61;
+  --c-info: 3 105 161;
+  --c-viol: 109 40 217;
+
+  --ambient-1: rgba(13, 125, 110, 0.05);
+  --ambient-2: rgba(3, 105, 161, 0.03);
+  --rule-strong: rgba(18, 33, 29, 0.85);
+
+  --header-h: 57px;         /* h-14 nav + 1px rule — sticky offsets derive from this */
+
+  /* Font stacks live here as real custom properties, under --stack-* names.
+   * They cannot be read from the @theme block below: `inline` substitutes theme
+   * values directly into utilities instead of emitting the variable, so a plain
+   * `font-family: var(--font-serif)` rule would resolve to nothing and silently
+   * invalidate the whole declaration. The --font-* sources are emitted by the
+   * Astro Fonts API, one per <Font> component rendered in the layout head. */
+  --stack-serif: var(--font-newsreader), ui-serif, Georgia, Cambria,
+    'Times New Roman', Times, serif;
+  --stack-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system,
+    BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --stack-mono: var(--font-jetbrains), ui-monospace, 'SF Mono', SFMono-Regular,
+    Menlo, Consolas, 'Liberation Mono', monospace;
+}
+
+[data-theme='dark'] {
+  color-scheme: dark;
+
+  --c-page: 12 21 18;       /* deep green-black — not KYP's blue-black */
+  --c-surface: 19 30 26;
+  --c-elevated: 23 36 31;
+  --c-inset: 10 17 15;
+
+  --c-ink: 232 240 236;
+  --c-ink-2: 195 209 203;
+  --c-ink-3: 148 166 160;
+  --c-ink-4: 109 125 120;
+
+  --c-line: rgba(232, 240, 236, 0.10);
+  --c-line-2: rgba(232, 240, 236, 0.18);
+
+  --c-accent: 79 209 181;   /* light teal — the deep teal goes muddy on dark */
+  --c-accent-2: 126 232 208;
+
+  --c-danger: 252 165 165;
+  --c-hot: 253 186 116;
+  --c-warn: 252 211 77;
+  --c-ok: 134 239 172;
+  --c-info: 125 211 252;
+  --c-viol: 196 181 253;
+
+  --ambient-1: rgba(79, 209, 181, 0.055);
+  --ambient-2: rgba(125, 211, 252, 0.03);
+  --rule-strong: rgba(232, 240, 236, 0.85);
+}
+
+/* ---------------------------------------------------------------------------
+ * Semantic roles → utilities.
+ *   `inline` is required: these reference other custom properties, and without
+ *   it Tailwind emits an indirection that breaks the per-theme override above.
+ * ------------------------------------------------------------------------- */
+@theme inline {
+  --color-page: rgb(var(--c-page));
+  --color-surface: rgb(var(--c-surface));
+  --color-elevated: rgb(var(--c-elevated));
+  --color-inset: rgb(var(--c-inset));
+
+  --color-ink: rgb(var(--c-ink));
+  --color-ink-2: rgb(var(--c-ink-2));
+  --color-ink-3: rgb(var(--c-ink-3));
+  --color-ink-4: rgb(var(--c-ink-4));
+
+  /* Hairline borders carry their alpha in the variable itself. */
+  --color-line: var(--c-line);
+  --color-line-2: var(--c-line-2);
+
+  --color-accent: rgb(var(--c-accent));
+  --color-accent-2: rgb(var(--c-accent-2));
+
+  --color-danger: rgb(var(--c-danger));
+  --color-hot: rgb(var(--c-hot));
+  --color-warn: rgb(var(--c-warn));
+  --color-ok: rgb(var(--c-ok));
+  --color-info: rgb(var(--c-info));
+  --color-viol: rgb(var(--c-viol));
+
+  /* --font-* sources are emitted by the Astro Fonts API. */
+  --font-serif: var(--font-newsreader), ui-serif, Georgia, Cambria,
+    'Times New Roman', Times, serif;
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system,
+    BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, 'SF Mono', SFMono-Regular,
+    Menlo, Consolas, 'Liberation Mono', monospace;
+}
+
+html,
+body {
+  background-color: rgb(var(--c-page));
+  color: rgb(var(--c-ink));
+  /* Sans is the *chrome* voice: nav, badges, metadata. Prose opts into serif. */
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* A faint tint off the top edge — depth without a glow. */
+body {
+  background-image:
+    radial-gradient(ellipse 90% 40% at 50% -8%, var(--ambient-1), transparent 62%),
+    radial-gradient(ellipse 50% 30% at 92% 0%, var(--ambient-2), transparent 55%);
+  background-attachment: fixed;
+  min-height: 100vh;
+}
+
+/* Headings are the editorial voice. Setting it here means markup doesn't carry
+ * a font class on every title. */
+h1,
+h2,
+h3,
+h4,
+.font-serif {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  letter-spacing: -0.011em;
+}
+
+/* Tabular numerics everywhere a number lives in mono — dates, counts. */
+.font-mono,
+code,
+kbd,
+samp,
+pre,
+time {
+  font-variant-numeric: tabular-nums;
+  font-family: var(--font-mono);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+:focus-visible {
+  outline: 2px solid rgb(var(--c-accent) / 0.85);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: rgb(var(--c-page));
+}
+::-webkit-scrollbar-thumb {
+  background: rgb(var(--c-ink-3) / 0.28);
+  border-radius: 6px;
+  border: 2px solid rgb(var(--c-page));
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgb(var(--c-ink-3) / 0.45);
+}
+
+::selection {
+  background: rgb(var(--c-accent) / 0.22);
+}
+
+/* Dual-theme Shiki code blocks (defaultColor: false emits both palettes). */
+[data-theme='dark'] .astro-code,
+[data-theme='dark'] .astro-code span {
+  color: var(--shiki-dark) !important;
+  background-color: var(--shiki-dark-bg) !important;
+  font-style: var(--shiki-dark-font-style) !important;
+  font-weight: var(--shiki-dark-font-weight) !important;
+}
+[data-theme='light'] .astro-code,
+[data-theme='light'] .astro-code span {
+  color: var(--shiki-light) !important;
+  background-color: var(--shiki-light-bg) !important;
+  font-style: var(--shiki-light-font-style) !important;
+  font-weight: var(--shiki-light-font-weight) !important;
+}
+
+/* ---------------------------------------------------------------------------
+ * Surfaces.
+ *
+ * Editorial rather than app-like: no ring, no glow, no lift-on-hover. A card
+ * is a block of paper separated by a hairline, and hover moves a left accent
+ * rule in rather than animating the whole box.
+ * ------------------------------------------------------------------------- */
+
+.g-card {
+  position: relative;
+  background: rgb(var(--c-surface));
+  border: 1px solid var(--c-line);
+  border-radius: 3px;
+  transition: border-color 160ms ease, background-color 160ms ease;
+}
+.g-card::before {
+  content: '';
+  position: absolute;
+  left: -1px;
+  top: -1px;
+  bottom: -1px;
+  width: 2px;
+  background: rgb(var(--c-accent));
+  opacity: 0;
+  transition: opacity 160ms ease;
+  border-radius: 3px 0 0 3px;
+}
+.g-card:hover {
+  border-color: rgb(var(--c-ink) / 0.22);
+}
+.g-card:hover::before {
+  opacity: 1;
+}
+
+.g-panel {
+  background: rgb(var(--c-surface));
+  border: 1px solid var(--c-line);
+  border-radius: 3px;
+  padding: 1.25rem;
+}
+@media (min-width: 640px) {
+  .g-panel {
+    padding: 1.5rem;
+  }
+}
+
+.g-inset {
+  background: rgb(var(--c-inset) / 0.6);
+  border: 1px solid var(--c-line);
+  border-radius: 3px;
+}
+
+/* Section eyebrow / micro-label — sans, spaced, quiet. */
+.g-label {
+  font-family: var(--font-sans);
+  font-size: 10px;
+  line-height: 1.2;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: rgb(var(--c-ink-4));
+}
+
+/* The masthead rule — a plain warm hairline, not a gradient. */
+.g-accent-strip {
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    rgb(var(--c-accent)) 0%,
+    rgb(var(--c-accent) / 0.35) 42%,
+    transparent 78%
+  );
+}
+
+/* Tag — a text label with a rule under it, not a pill. Reads as an index term. */
+.g-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35em;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.03em;
+  line-height: 1.5;
+  padding: 1px 0;
+  color: rgb(var(--c-ink-3));
+  border: 0;
+  border-bottom: 1px solid rgb(var(--c-accent) / 0.4);
+  border-radius: 0;
+  background: transparent;
+}
+a.g-tag:hover,
+button.g-tag:hover {
+  color: rgb(var(--c-accent-2));
+  border-bottom-color: rgb(var(--c-accent));
+}
+
+/* Incident entries — a warm rule down the leading edge rather than a red box. */
+.g-card.is-incident::before {
+  opacity: 1;
+  background: rgb(var(--c-danger) / 0.55);
+}
+.g-card.is-incident:hover::before {
+  background: rgb(var(--c-danger));
+}
+
+/* Wikilinks — dotted underline marks an internal cross-reference, so it reads
+ * differently from an outbound citation. */
+.wikilink {
+  color: rgb(var(--c-accent-2));
+  border-bottom: 1px dotted rgb(var(--c-accent) / 0.6);
+}
+.wikilink:hover {
+  border-bottom-style: solid;
+  border-bottom-color: rgb(var(--c-accent));
+}
+
+/* Typography plugin → tokens. Prose is set in the serif; the -invert- set
+ * points at the same roles so `prose prose-invert` follows the theme. */
+.prose {
+  font-family: var(--font-serif);
+  --tw-prose-body: rgb(var(--c-ink-2));
+  --tw-prose-headings: rgb(var(--c-ink));
+  --tw-prose-lead: rgb(var(--c-ink-2));
+  --tw-prose-links: rgb(var(--c-accent-2));
+  --tw-prose-bold: rgb(var(--c-ink));
+  --tw-prose-counters: rgb(var(--c-ink-3));
+  --tw-prose-bullets: rgb(var(--c-ink-4));
+  --tw-prose-hr: var(--c-line-2);
+  --tw-prose-quotes: rgb(var(--c-ink-2));
+  --tw-prose-quote-borders: rgb(var(--c-accent) / 0.5);
+  --tw-prose-captions: rgb(var(--c-ink-3));
+  --tw-prose-code: rgb(var(--c-accent-2));
+  --tw-prose-th-borders: var(--c-line-2);
+  --tw-prose-td-borders: var(--c-line);
+  --tw-prose-invert-body: var(--tw-prose-body);
+  --tw-prose-invert-headings: var(--tw-prose-headings);
+  --tw-prose-invert-lead: var(--tw-prose-lead);
+  --tw-prose-invert-links: var(--tw-prose-links);
+  --tw-prose-invert-bold: var(--tw-prose-bold);
+  --tw-prose-invert-counters: var(--tw-prose-counters);
+  --tw-prose-invert-bullets: var(--tw-prose-bullets);
+  --tw-prose-invert-hr: var(--tw-prose-hr);
+  --tw-prose-invert-quotes: var(--tw-prose-quotes);
+  --tw-prose-invert-quote-borders: var(--tw-prose-quote-borders);
+  --tw-prose-invert-captions: var(--tw-prose-captions);
+  --tw-prose-invert-code: var(--tw-prose-code);
+  --tw-prose-invert-th-borders: var(--tw-prose-th-borders);
+  --tw-prose-invert-td-borders: var(--tw-prose-td-borders);
+}
+
+/* Prose reads at a larger serif size; tables, code and metadata stay sans/mono
+ * so dense technical blocks don't turn mushy. */
+.prose {
+  font-size: 1.0625rem;
+  line-height: 1.75;
+}
+.prose :where(code, pre, kbd, samp) {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+}
+.prose :where(table) {
+  font-family: var(--font-sans);
+}
+
+/* Theme toggle — the icon shows the theme you'll switch to. */
+[data-theme='dark'] .theme-icon-moon,
+[data-theme='light'] .theme-icon-sun {
+  display: none;
+}

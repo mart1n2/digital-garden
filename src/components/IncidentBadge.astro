@@ -1,0 +1,39 @@
+---
+/**
+ * Marks a post-mortem. Driven by the presence of an `incident` frontmatter
+ * block rather than a topic enum — the old `kind` field collided with
+ * `research` as a section name.
+ */
+interface Props {
+  incident: {
+    loss?: string;
+    scope?: string;
+    status?: string;
+  };
+  size?: 'sm' | 'md';
+}
+
+const { incident, size = 'md' } = Astro.props;
+
+const padding = size === 'sm' ? 'px-1.5 py-0.5 text-[10px]' : 'px-2 py-0.5 text-[11px]';
+
+// Compose the right-side detail strip from whichever incident fields exist.
+// `post-mortem` is the common case and adds nothing, so it's omitted.
+const details: string[] = [];
+if (incident.scope) details.push(incident.scope);
+if (incident.loss) details.push(incident.loss);
+if (incident.status && incident.status !== 'post-mortem') details.push(incident.status);
+---
+
+<span
+  class={`inline-flex items-center gap-1.5 rounded border font-semibold uppercase tracking-wider bg-danger/10 text-danger border-danger/30 ${padding}`}
+>
+  <span aria-hidden="true">⚠</span>
+  <span>Incident</span>
+  {details.length > 0 && (
+    <>
+      <span class="opacity-40" aria-hidden="true">·</span>
+      <span class="font-mono normal-case tracking-normal opacity-90">{details.join(' · ')}</span>
+    </>
+  )}
+</span>

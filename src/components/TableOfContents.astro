@@ -1,0 +1,92 @@
+---
+import type { MarkdownHeading } from '@astrojs/markdown-remark';
+
+interface Props {
+  /** Headings with the exact slugs rendered in the HTML (from Astro's render()). */
+  headings: MarkdownHeading[];
+  title?: string;
+}
+
+const { headings, title = 'On this page' } = Astro.props;
+const items = headings.filter(h => h.depth === 2 || h.depth === 3);
+---
+
+{items.length > 0 && (
+  <details
+    data-toc-details
+    class="group lg:sticky lg:top-[calc(var(--header-h)+16px)] lg:max-h-[calc(100vh-var(--header-h)-2rem)] lg:overflow-y-auto rounded-lg border border-line bg-surface/60 lg:border-0 lg:bg-transparent lg:rounded-none"
+  >
+    <summary class="lg:hidden flex items-center justify-between gap-2 px-4 py-3 cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
+      <span class="text-xs font-semibold uppercase tracking-wider text-ink-3">{title}</span>
+      <span class="text-ink-4 transition-transform group-open:rotate-180" aria-hidden="true">▾</span>
+    </summary>
+    <nav class="px-4 pb-4 pt-1 lg:p-0" aria-label="Table of contents">
+      <h3 class="hidden lg:block text-xs font-semibold uppercase tracking-wider text-ink-4 mb-3">{title}</h3>
+      <ul class="space-y-1 text-sm border-l border-line-2">
+        {items.map(heading => (
+          <li class={heading.depth === 3 ? 'ml-3' : ''}>
+            <a
+              href={`#${heading.slug}`}
+              data-toc-link
+              data-section={heading.slug}
+              class="toc-link block pl-3 -ml-px py-1 border-l border-transparent text-ink-3 hover:text-ink transition-colors"
+            >
+              {heading.text}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  </details>
+)}
+
+<style>
+  .toc-link.is-active {
+    color: rgb(var(--c-ink));
+    border-left-color: rgb(var(--c-accent));
+  }
+</style>
+
+<script>
+  (function () {
+    const links = Array.from(document.querySelectorAll<HTMLAnchorElement>('[data-toc-link]'));
+    if (links.length === 0) return;
+
+    // Collapsed on mobile, always open on desktop.
+    const details = document.querySelector<HTMLDetailsElement>('[data-toc-details]');
+    if (details) {
+      const mq = window.matchMedia('(min-width: 1024px)');
+      const syncOpen = () => { details.open = mq.matches || details.open; };
+      mq.addEventListener('change', syncOpen);
+      syncOpen();
+    }
+
+    const ids = links.map(l => l.dataset.section).filter(Boolean) as string[];
+    const setActive = (id: string) => {
+      links.forEach(l => l.classList.toggle('is-active', l.dataset.section === id));
+    };
+
+    const visible = new Set<string>();
+    const observer = new IntersectionObserver(
+      entries => {
+        for (const e of entries) {
+          if (e.isIntersecting) visible.add(e.target.id);
+          else visible.delete(e.target.id);
+        }
+        // Pick the first id in document order that is visible.
+        for (const id of ids) {
+          if (visible.has(id)) {
+            setActive(id);
+            return;
+          }
+        }
+      },
+      { rootMargin: '-20% 0px -70% 0px', threshold: 0 }
+    );
+
+    ids.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) observer.observe(el);
+    });
+  })();
+</script>

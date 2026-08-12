@@ -1,0 +1,42 @@
+---
+import type { Backlink } from '../utils/backlinks';
+import { SECTION_META, sectionOf, urlOf } from '../sections.mjs';
+
+interface Props {
+  backlinks: Backlink[];
+}
+
+const { backlinks } = Astro.props;
+---
+
+<section class="mt-12 pt-6 border-t border-line-2 max-w-3xl">
+  <h2 class="text-xs font-semibold uppercase tracking-wider text-ink-4 mb-1">Linked from</h2>
+  {backlinks.length > 0 ? (
+    <>
+      <p class="text-xs text-ink-4 mb-3">
+        {backlinks.length} {backlinks.length === 1 ? 'entry links' : 'entries link'} here.
+      </p>
+      <ul class="space-y-2">
+        {backlinks.map(link => (
+          <li>
+            <a href={urlOf(link.id)} class="g-card block p-3">
+              <div class="flex items-center justify-between gap-3">
+                <span class="text-sm font-medium text-ink-2">{link.title}</span>
+                <span class="text-[11px] uppercase tracking-wider text-ink-4 shrink-0">
+                  {SECTION_META[sectionOf(link.id)].label}
+                </span>
+              </div>
+              {link.description && (
+                <p class="text-xs text-ink-4 mt-1 line-clamp-1">{link.description}</p>
+              )}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </>
+  ) : (
+    <p class="text-xs text-ink-4">
+      Nothing links here yet — this entry is a leaf for now.
+    </p>
+  )}
+</section>

@@ -1,0 +1,88 @@
+---
+import Layout from '../components/Layout.astro';
+import EntryCard from '../components/EntryCard.astro';
+import { getCollection } from 'astro:content';
+import { compareEntries } from '../utils/entries';
+import { SECTIONS, SECTION_META, sectionOf } from '../sections.mjs';
+
+const all = (await getCollection('garden', ({ data }) => !data.draft)).sort(compareEntries);
+
+const featured = all[0] ?? null;
+const sideEntries = all.slice(1, 4); // one big + three small
+
+const countsBySection = new Map<string, number>();
+for (const entry of all) {
+  const section = sectionOf(entry.id);
+  countsBySection.set(section, (countsBySection.get(section) ?? 0) + 1);
+}
+---
+
+<Layout
+  title="mart1n"
+  description="Incident post-mortems and security research, plus engineering notes and a garden of shorter entries."
+>
+  <!-- Hero — left-aligned; a centered hero reads wrong at this width.
+       Deliberately spare: one line that states a position, one line that says
+       what's here. The nav above already carries navigation. -->
+  <section class="pt-10 pb-16 sm:pt-16 sm:pb-24 max-w-3xl">
+    <h1 class="text-5xl sm:text-7xl font-semibold text-ink leading-[1.02] tracking-[-0.02em]">
+      Everything leaves<br />a <em class="italic font-normal text-accent-2">trace</em>.
+    </h1>
+    <p class="mt-7 text-lg sm:text-xl text-ink-3 font-serif">
+      Incident post-mortems and security research.
+    </p>
+  </section>
+
+  <!-- Latest — one large card + three small, golden-ratio split, heights aligned. -->
+  {featured && (
+    <section class="mb-16">
+      <div class="flex items-end justify-between gap-3 mb-5 pb-3 border-b border-line-2">
+        <h2 class="text-2xl font-semibold">Latest</h2>
+        <span class="text-sm text-ink-4 shrink-0">{all.length} {all.length === 1 ? 'entry' : 'entries'}</span>
+      </div>
+
+      <div class="grid gap-4 lg:grid-cols-[1.618fr_1fr]">
+        <EntryCard entry={featured} variant="featured" showSection />
+        {sideEntries.length > 0 && (
+          <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-1 lg:grid-rows-3">
+            {sideEntries.map(entry => (
+              <EntryCard entry={entry} variant="compact" />
+            ))}
+          </div>
+        )}
+      </div>
+    </section>
+  )}
+
+  <!-- Sections -->
+  <section>
+    <div class="mb-5 pb-3 border-b border-line-2">
+      <h2 class="text-2xl font-semibold">Sections</h2>
+    </div>
+    <div class="grid gap-4 sm:grid-cols-2">
+      {SECTIONS.map(section => {
+        const count = countsBySection.get(section) ?? 0;
+        return (
+          <a href={`/${section}`} class="g-card flex flex-col p-5">
+            <div class="flex items-baseline justify-between gap-3">
+              <h3 class="text-lg font-semibold text-ink">{SECTION_META[section].label}</h3>
+              <span class="text-xs font-mono text-ink-4 shrink-0">
+                {count} {count === 1 ? 'entry' : 'entries'}
+              </span>
+            </div>
+            <p class="text-sm text-ink-3 leading-relaxed mt-2">{SECTION_META[section].blurb}</p>
+          </a>
+        );
+      })}
+    </div>
+  </section>
+
+  {all.length === 0 && (
+    <div class="p-8 bg-inset/40 border border-dashed border-line-2 rounded-lg text-center">
+      <div class="text-ink-2 font-semibold mb-1">Nothing published yet</div>
+      <p class="text-sm text-ink-4">
+        Markdown files under <code class="text-ink-3">src/content/garden/&lt;section&gt;/</code> appear here.
+      </p>
+    </div>
+  )}
+</Layout>
